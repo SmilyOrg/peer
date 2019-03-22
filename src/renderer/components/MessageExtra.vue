@@ -4,7 +4,7 @@
       <template #activator="data">
         <v-chip v-on="data.on" outline>
           <v-icon small>{{ icon }}</v-icon>
-          {{ extra.nick }}
+          {{ extra.name }}
           <template v-if="type == 'mode'">
             <i class="fas fa-hashtag"></i> {{ extra.modes }} {{ extra.args }}
           </template>
@@ -33,14 +33,15 @@
 </template>
 
 <script>
+const userMatcher = /(\S*?)!(\S*?)@(\S*)/;
 const extrasMatchers = [
-  { type: 'mode', regexp: /(\S*?)!(\S*?)@(\S*) set mode: (\S+) ?(.*)/, props: ['nick', 'ident', 'hostname', 'modes', 'args'] },
-  { type: 'kick', regexp: /(\S*?)!(\S*?)@(\S*) kicked (\S+) with reason: ?(.*)/, props: ['nick', 'ident', 'hostname', 'kicked', 'reason'] },
-  { type: 'quit', regexp: /(\S*?)!(\S*?)@(\S*) quit with message: ?(.*)/, props: ['nick', 'ident', 'hostname', 'reason'] },
-  { type: 'join', regexp: /(\S*?)!(\S*?)@(\S*) joined/, props: ['nick', 'ident', 'hostname'] },
-  { type: 'part', regexp: /(\S*?)!(\S*?)@(\S*) parted: ?(.*)/, props: ['nick', 'ident', 'hostname', 'reason'] },
-  { type: 'nick', regexp: /(\S*?)!(\S*?)@(\S*) is now known as (.*)/, props: ['nick', 'ident', 'hostname', 'newNick'] },
-  { type: 'topic', regexp: /(\S*?)!(\S*?)@(\S*) changed the topic to: (.*)/, props: ['nick', 'ident', 'hostname', 'topic'] },
+  { type: 'kick', regexp: /(\S*?) kicked (\S+) with reason: ?(.*)/, props: ['user', 'kicked', 'reason'] },
+  { type: 'mode', regexp: /(\S*?) set mode: (\S+) ?(.*)/, props: ['user', 'modes', 'args'] },
+  { type: 'quit', regexp: /(\S*?) quit with message: ?(.*)/, props: ['user', 'reason'] },
+  { type: 'join', regexp: /(\S*?) joined/, props: ['user'] },
+  { type: 'part', regexp: /(\S*?) parted: ?(.*)/, props: ['user', 'reason'] },
+  { type: 'nick', regexp: /(\S*?) is now known as (.*)/, props: ['user', 'newNick'] },
+  { type: 'topic', regexp: /(\S*?) changed the topic to: (.*)/, props: ['user', 'topic'] },
 ];
 
 export default {
@@ -65,6 +66,15 @@ export default {
         matcher.props.forEach((prop, index) => {
           extra[prop] = match[1 + index];
         });
+        if (extra.user) {
+          const userMatch = extra.user.match(userMatcher);
+          if (userMatch) {
+            [, extra.nick, extra.ident, extra.hostname] = userMatch;
+            extra.name = extra.nick;
+          } else {
+            extra.name = extra.user;
+          }
+        }
       }
       return extra;
     },

@@ -14,9 +14,7 @@
         <strong class="nick carto-vivid" :class="[nickClass]">{{ nick }}</strong>
         <relative-time :timestamp="first.time"></relative-time>
       </div>
-      <div v-for="(event, index) in message.events" :key="index">
-        {{ event.message }}
-      </div>
+      <message-event v-for="(event, index) in message.events" :key="index" :event="event"></message-event>
     </template>
     <!-- <div class="text">{{ text }}</div> -->
   </div>
@@ -25,6 +23,7 @@
 <script>
 import XXH from 'xxhashjs';
 import MessageExtra from './MessageExtra';
+import MessageEvent from './MessageEvent';
 import RelativeTime from './RelativeTime';
 
 const maxColors = 12;
@@ -39,6 +38,7 @@ export default {
   },
   components: {
     MessageExtra,
+    MessageEvent,
     RelativeTime,
   },
   computed: {

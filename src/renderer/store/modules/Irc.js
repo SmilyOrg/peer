@@ -1,23 +1,43 @@
+import Server from '../models/Server';
+import Channel from '../models/Channel';
+// import Message from '../models/Message';
+
 const IRC = require('irc-framework');
 
-let client = null;
-
-const channelByName = {};
+// const channelByName = {};
 const maxEventTimeDiffMillis = 300 * 1000;
 
 const state = {
-  client: {
-    status: '',
-  },
-  channels: [],
+  // servers: [],
+  // servers: [
+  //   {
+  //     id: 'efnet',
+  //     name: 'EFNet',
+  //     channels: [{
+  //       id: 'test',
+  //       name: '#test',
+  //       active: false,
+  //     }],
+  //   },
+  // ],
+  // client: {
+  //   status: '',
+  // },
+  // channels: [],
 };
 
 const getters = {
-  channel: () => name => channelByName[name],
-  channels: state => state.channels,
+  // channel: () => (server, id) => server.channels.find(channel => channel.id === id),
+  // channels: state => state.channels,
+  // servers: state => state.servers,
+  // server: () => serverId => state.servers.find(server => server.id === serverId),
 };
 
 const mutations = {
+  addServer(state, server) {
+    state.servers.push(server);
+  },
+  /*
   addChannel(state, name) {
     if (channelByName[name]) return;
     const channel = {
@@ -33,11 +53,12 @@ const mutations = {
     msg.index = channel.messages.length;
     channel.messages.push(msg);
   },
+  */
 };
 
 const actions = {
   connect(context, opts) {
-    if (client) return;
+    // if (client) return;
 
     // const ircOpts = {
     //   ...opts,
@@ -47,10 +68,41 @@ const actions = {
 
     // client = new irc.Client(opts.host, opts.nick, ircOpts);
 
-    client = new IRC.Client();
+    const client = new IRC.Client();
+    const server = {
+      client,
+      ...opts,
+      // channels: [],
+      // channels: [
+      //   {
+      //     id: 'test',
+      //     server_id: 'efnet',
+      //     name: '#test',
+      //     active: false,
+      //   },
+      // ],
+    };
+    // context.commit('addServer', server);
+
     client.connect({
       ...opts,
     });
+
+    console.log(server);
+
+    Server.insert({ data: server });
+    // Channel.insert({
+    //   data: {
+    //     id: 'efnet_test',
+    //     server_id: 'efnet',
+    //     name: '#test',
+    //     active: false,
+    //   },
+    // });
+
+    // console.log(Server.find(server.id));
+    // console.log(Server.query().whereId(server.id).with('channels').get());
+    // console.log(Channel.query().where('server_id', 'efnet').get());
 
     // client.addListener('error', (message) => {
     //   console.log('error: ', message);
@@ -69,28 +121,47 @@ const actions = {
     // });
     
     client.on('message', (event) => {
+      
       // console.log(event);
+      
       const channelName = event.target;
-      let channel = context.getters.channel(channelName);
-      if (!channel) {
-        context.commit('addChannel', channelName);
-        channel = context.getters.channel(channelName);
-      }
-      // context.commit('addMessage', {
-      //   from,
-      //   to,
-      //   message,
-      // });
-      // console.log(channel);
+      const channels = Channel
+        .query()
+        .where('server_id', server.id)
+        .where('name', channelName)
+        .get();
 
+      let channel;
+      const newChannel = channels.length === 0;
+      if (newChannel) {
+        channel = {
+          irc: client.channel(channelName),
+          id: `${server.id}_${channelName.slice(1)}`,
+          server_id: server.id,
+          name: channelName,
+          messages: [],
+        };
+        console.log(channel);
+      } else {
+        [channel] = channels;
+      }
+      
+      // Message.insert({
+      //   data: {
+      //     id: msgId,
+      //     ident: event.ident,
+      //     events: [event],
+      //   },
+      // });
+
+      
       const msgs = channel.messages;
       const last = msgs.length > 0 ?
         msgs[msgs.length - 1] :
         null;
 
       if (
-        last &&
-        event.ident === last.ident &&
+        last && event.ident === last.ident &&
         (event.time - last.events[last.events.length - 1].time) <= maxEventTimeDiffMillis
       ) {
         last.events.push(event);
@@ -101,6 +172,45 @@ const actions = {
           events: [event],
         });
       }
+      
+      if (newChannel) {
+        Channel.insert({
+          data: channel,
+        });
+      }
+      // {
+      //   id: msgs.length,
+      //   ident: event.ident,
+      //   events: [event],
+      // }
+
+      // console.log(event);
+
+      // const channelName = event.target;
+      // let channel = context.getters.channel(channelName);
+      // if (!channel) {
+      //   context.commit('addChannel', channelName);
+      //   channel = context.getters.channel(channelName);
+      // }
+
+      // const msgs = channel.messages;
+      // const last = msgs.length > 0 ?
+      //   msgs[msgs.length - 1] :
+      //   null;
+
+      // if (
+      //   last &&
+      //   event.ident === last.ident &&
+      //   (event.time - last.events[last.events.length - 1].time) <= maxEventTimeDiffMillis
+      // ) {
+      //   last.events.push(event);
+      // } else {
+      //   msgs.push({
+      //     id: msgs.length,
+      //     ident: event.ident,
+      //     events: [event],
+      //   });
+      // }
 
       // console.log(channel);
       // console.log(`${from} => ${to}: ${message}`);

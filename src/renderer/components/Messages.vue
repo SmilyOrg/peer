@@ -1,6 +1,5 @@
 <template>
-  <div class="channel">
-    {{ channel.name }}
+  <div class="messages">
     <DynamicScroller
         ref="scroller"
         :items="messages"
@@ -32,17 +31,12 @@
 <script>
 import Message from './Message';
 export default {
-  name: 'channel',
+  name: 'messages',
   components: {
     Message,
   },
   props: {
-    channel: Object,
-  },
-  computed: {
-    messages() {
-      return this.channel.messages;
-    },
+    messages: Array,
   },
   methods: {
     scrollToBottom() {
@@ -62,12 +56,16 @@ export default {
 
 <style scoped>
 
-.channel {
-  padding: 10px;
+.messages {
+  height: calc(100% - 55px);
+}
+
+.message {
+  margin: 8px;
 }
 
 .scroller {
-  height: 600px;
+  height: 100%;
 }
 
 </style>

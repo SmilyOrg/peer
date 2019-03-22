@@ -27,7 +27,7 @@ export default {
       return this.$store.state.Time.now;
     },
     ago() {
-      return this.time.from(this.now);
+      return this.time.from(this.now).replace(' ', '\u00A0');
     },
   },
 };

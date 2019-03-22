@@ -28,5 +28,7 @@ module.exports = {
     'no-console': process.env.NODE_ENV === 'production' ? 2 : 0,
     'no-trailing-spaces': 0,
     'padded-blocks': 0,
+    'no-plusplus': 0,
+    "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
   }
 }
